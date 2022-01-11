@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
  *      aws.secret=[your Secret access key]
  *      aws.region=[an aws region of choice. For example: us-east-2]
  */
-public class AwsImageService {
+public class AwsImageService implements ImageServiceInterface{
 
     private Logger log = LoggerFactory.getLogger(AwsImageService.class);
 
@@ -78,7 +78,7 @@ public class AwsImageService {
         DetectLabelsRequest detectLabelsRequest = DetectLabelsRequest.builder().image(awsImage).minConfidence(confidenceThreshhold).build();
         DetectLabelsResponse response = rekognitionClient.detectLabels(detectLabelsRequest);
         logLabelsForFun(response);
-        return response.labels().stream().filter(l -> l.name().toLowerCase().contains("cat")).findFirst().isPresent();
+        return response.labels().stream().filter(l -> l.name().toLowerCase().equals("cat")).findFirst().isPresent();
     }
 
     private void logLabelsForFun(DetectLabelsResponse response) {

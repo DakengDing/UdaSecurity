@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: software.amazon.awssdk:apache-client:2.17.10">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/software/amazon/awssdk/apache-client/2.17.10/apache-client-2.17.10.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/software/amazon/awssdk/apache-client/2.17.10/apache-client-2.17.10-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/software/amazon/awssdk/apache-client/2.17.10/apache-client-2.17.10-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
