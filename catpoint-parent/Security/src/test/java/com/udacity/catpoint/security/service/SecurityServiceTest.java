@@ -1,10 +1,9 @@
 package com.udacity.catpoint.security.service;
 
-import com.udacity.catpoint.image.service.AwsImageService;
-import com.udacity.catpoint.image.service.FakeImageService;
 import com.udacity.catpoint.image.service.ImageServiceInterface;
 import com.udacity.catpoint.security.application.StatusListener;
 import com.udacity.catpoint.security.data.*;
+import net.bytebuddy.utility.RandomString;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,13 +15,11 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.awt.image.BufferedImage;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyFloat;
 import static org.mockito.Mockito.*;
@@ -31,6 +28,34 @@ import static org.mockito.Mockito.*;
 
 class SecurityServiceTest {
 
+    public SecurityService securityService;
+
+    @Mock
+    public ImageServiceInterface imageService;
+
+    @Mock
+    public SecurityRepository securityRepository;
+    @Mock
+    StatusListener statusListener;
+
+    static HashSet<Sensor> sensorCollection = new HashSet<>();
+
+    Sensor testSensor = new Sensor("DOOR", SensorType.DOOR);
+
+    static void createSensorSet() {
+        Sensor doorSensor = new Sensor("DOOR", SensorType.DOOR);
+        Sensor windowSensor = new Sensor("WINDOW", SensorType.WINDOW);
+        Sensor motionSensor = new Sensor("MOTION", SensorType.MOTION);
+        sensorCollection.add(doorSensor);
+        sensorCollection.add(windowSensor);
+        sensorCollection.add(motionSensor);
+    }
+
+    @BeforeEach
+    void init() {
+        securityService = new SecurityService(securityRepository,imageService);
+    }
+    /*@Mock
             SecurityService securityService;
     @Mock
             SecurityRepository securityRepository;
@@ -39,7 +64,7 @@ class SecurityServiceTest {
     @Mock
             StatusListener statusListener;
 
-
+    @Mock
     private Sensor testSensor;
     private String randomUUID= UUID.randomUUID().toString();
 
@@ -59,14 +84,15 @@ class SecurityServiceTest {
     @BeforeEach
     void init(){
         securityService = new SecurityService(securityRepository,imageService);
-        testSensor = getSensor();
-    }
+        testSensor = new Sensor(new RandomString().nextString(),SensorType.DOOR);
+    }*/
 
     @Test//1
     public void put_the_system_into_pending_alarm_status() {
         when(securityRepository.getArmingStatus()).thenReturn(ArmingStatus.ARMED_HOME);
         when(securityRepository.getAlarmStatus()).thenReturn(AlarmStatus.NO_ALARM);
-        securityService.changeSensorActivationStatus(testSensor,true);
+        testSensor.setActive(true);
+        securityService.changeSensorActivationStatus(testSensor, true);
         verify(securityRepository).setAlarmStatus(AlarmStatus.PENDING_ALARM);
     }
 
@@ -75,7 +101,8 @@ class SecurityServiceTest {
     public void set_the_alarm_status_to_alarm() {
         when(securityRepository.getArmingStatus()).thenReturn(ArmingStatus.ARMED_HOME);
         when(securityRepository.getAlarmStatus()).thenReturn(AlarmStatus.PENDING_ALARM);
-        securityService.changeSensorActivationStatus(testSensor,true);
+        testSensor.setActive(false);
+        securityService.changeSensorActivationStatus(testSensor, true);
         verify(securityRepository).setAlarmStatus(AlarmStatus.ALARM);
     }
 
@@ -84,7 +111,9 @@ class SecurityServiceTest {
     public void return_to_no_alarm_state() {
         when(securityRepository.getArmingStatus()).thenReturn(ArmingStatus.ARMED_HOME);
         when(securityRepository.getAlarmStatus()).thenReturn(AlarmStatus.PENDING_ALARM);
-        securityService.changeSensorActivationStatus(testSensor);
+        testSensor.setActive(false);
+        securityService.changeSensorActivationStatus(testSensor, true);
+        securityService.changeSensorActivationStatus(testSensor, false);
         verify(securityRepository).setAlarmStatus(AlarmStatus.NO_ALARM);
     }
 
@@ -104,8 +133,8 @@ class SecurityServiceTest {
     //test5
     public void change_sensor_state_to_alarm_state() {
         when(securityRepository.getAlarmStatus()).thenReturn(AlarmStatus.PENDING_ALARM);
-
-        securityService.changeSensorActivationStatus(testSensor,true);
+        testSensor.setActive(true);
+        securityService.changeSensorActivationStatus(testSensor, true);
         verify(securityRepository).setAlarmStatus(AlarmStatus.ALARM);
     }
 
@@ -130,7 +159,7 @@ class SecurityServiceTest {
     @Test
     //test8
     public void not_cat_change_the_status_to_no_alarm_as_long_as_the_sensors_are_not_active() {
-        securityService.changeSensorActivationStatus(testSensor);
+        securityService.changeSensorActivationStatus(testSensor,false);
         when(imageService.imageContainsCat(any(),anyFloat())).thenReturn(false);
 
         securityService.processImage(mock(BufferedImage.class));
@@ -140,7 +169,9 @@ class SecurityServiceTest {
     @Test
     //test9
     public void disarmed_set_the_status_to_no_alarm() {
+
         securityService.setArmingStatus(ArmingStatus.DISARMED);
+
         verify(securityRepository).setAlarmStatus(AlarmStatus.NO_ALARM);
     }
 
@@ -182,6 +213,7 @@ class SecurityServiceTest {
         securityService.changeSensorActivationStatus(testSensor,false);
         securityService.changeSensorActivationStatus(testSensor,true);
     }
+
 
 
 

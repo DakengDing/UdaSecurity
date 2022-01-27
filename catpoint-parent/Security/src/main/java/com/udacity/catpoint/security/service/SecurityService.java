@@ -1,7 +1,5 @@
 package com.udacity.catpoint.security.service;
 
-import com.udacity.catpoint.image.service.AwsImageService;
-//import com.udacity.catpoint.image.service.FakeImageService;
 import com.udacity.catpoint.image.service.ImageServiceInterface;
 import com.udacity.catpoint.security.application.StatusListener;
 import com.udacity.catpoint.security.data.AlarmStatus;
@@ -12,6 +10,7 @@ import com.udacity.catpoint.security.data.Sensor;
 import java.awt.image.BufferedImage;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
  * Service that receives information about changes to the security system. Responsible for
@@ -25,6 +24,7 @@ public class SecurityService {
     private ImageServiceInterface imageService;
     private SecurityRepository securityRepository;
     private Set<StatusListener> statusListeners = new HashSet<>();
+    private Boolean dectectCat = false;
 
     public SecurityService(SecurityRepository securityRepository, ImageServiceInterface imageService) {
         this.securityRepository = securityRepository;
@@ -37,10 +37,21 @@ public class SecurityService {
      * @param armingStatus
      */
     public void setArmingStatus(ArmingStatus armingStatus) {
-        if(armingStatus == ArmingStatus.DISARMED) {
-            setAlarmStatus(AlarmStatus.NO_ALARM);
+        if (dectectCat && armingStatus == ArmingStatus.ARMED_HOME) {
+                setAlarmStatus(AlarmStatus.ALARM);
         }
-        securityRepository.setArmingStatus(armingStatus);
+        if (armingStatus == ArmingStatus.DISARMED) {
+                setAlarmStatus(AlarmStatus.NO_ALARM);
+        } else {
+            ConcurrentSkipListSet<Sensor> sensors = new ConcurrentSkipListSet<>(getSensors());
+            sensors.forEach(sensor -> changeSensorActivationStatus(sensor,false));
+        }
+            securityRepository.setArmingStatus(armingStatus);
+            statusListeners.forEach(sl -> sl.sensorStatusChanged());
+    }
+
+    private boolean allSensorsStatus(boolean status){
+        return getSensors().stream().allMatch(sensor -> sensor.getActive() == status);
     }
 
     /**
@@ -49,9 +60,10 @@ public class SecurityService {
      * @param cat True if a cat is detected, otherwise false.
      */
     private void catDetected(Boolean cat) {
+        dectectCat = cat;
         if(cat && getArmingStatus() == ArmingStatus.ARMED_HOME) {
             setAlarmStatus(AlarmStatus.ALARM);
-        } else {
+        } else if (!cat && allSensorsStatus(false)){
             setAlarmStatus(AlarmStatus.NO_ALARM);
         }
 
@@ -108,13 +120,18 @@ public class SecurityService {
      * @param active
      */
     public void changeSensorActivationStatus(Sensor sensor, Boolean active) {
-        if(!sensor.getActive() && active) {
-            handleSensorActivated();
-        } else if (sensor.getActive() && !active) {
-            handleSensorDeactivated();
+        AlarmStatus alarmStatus = securityRepository.getAlarmStatus();
+        if (alarmStatus != AlarmStatus.ALARM){
+            if (active){
+                handleSensorActivated();
+            }else if (sensor.getActive()){
+                handleSensorDeactivated();
+            }
         }
         sensor.setActive(active);
         securityRepository.updateSensor(sensor);
+
+
     }
 
     /**
@@ -145,15 +162,6 @@ public class SecurityService {
     public ArmingStatus getArmingStatus() {
         return securityRepository.getArmingStatus();
     }
-    public void changeSensorActivationStatus(Sensor testSensor) {
-        AlarmStatus alarmStatus = this.getAlarmStatus();
-        ArmingStatus armingStatus = this.getArmingStatus();
-        if ((alarmStatus == AlarmStatus.PENDING_ALARM && !testSensor.getActive()) || (alarmStatus == AlarmStatus.ALARM && armingStatus == ArmingStatus.DISARMED)) {
-            {
-                handleSensorDeactivated();
-            }
-            securityRepository.updateSensor(testSensor);
-        }
-    }
+
 }
 
