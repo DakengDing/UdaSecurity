@@ -128,6 +128,7 @@ public class SecurityService {
                 handleSensorDeactivated();
             }
         }
+
         sensor.setActive(active);
         securityRepository.updateSensor(sensor);
 
@@ -161,6 +162,16 @@ public class SecurityService {
 
     public ArmingStatus getArmingStatus() {
         return securityRepository.getArmingStatus();
+    }
+
+    public void changeSensorActivationStatus(Sensor sensor) {
+        AlarmStatus alarmStatus = this.getAlarmStatus();
+        ArmingStatus armingStatus = this.getArmingStatus();
+
+         if (alarmStatus == AlarmStatus.ALARM && armingStatus == ArmingStatus.DISARMED) {
+            handleSensorDeactivated();
+        }
+        securityRepository.updateSensor(sensor);
     }
 
 }

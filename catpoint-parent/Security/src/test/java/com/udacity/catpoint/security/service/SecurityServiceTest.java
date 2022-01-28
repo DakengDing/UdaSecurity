@@ -212,7 +212,42 @@ class SecurityServiceTest {
         Mockito.when(securityService.getAlarmStatus()).thenReturn(AlarmStatus.ALARM);
         securityService.changeSensorActivationStatus(testSensor,false);
         securityService.changeSensorActivationStatus(testSensor,true);
+        Mockito.when(securityRepository.getAlarmStatus()).thenReturn(AlarmStatus.NO_ALARM);
+        Mockito.when(securityService.getAlarmStatus()).thenReturn(AlarmStatus.ALARM);
+        testSensor.setActive(true);
+        securityService.changeSensorActivationStatus(testSensor,false);
+
+
+
+
+
     }
+
+
+    @Test
+    public void systemArmedSetStatusAlarm () {
+        when(securityService.getArmingStatus()).thenReturn(ArmingStatus.ARMED_HOME);
+        when(imageService.imageContainsCat(any(), anyFloat())).thenReturn(true);
+        securityService.processImage(mock(BufferedImage.class));
+        securityService.setArmingStatus(securityService.getArmingStatus());
+        verify(securityRepository, times(2)).setAlarmStatus(AlarmStatus.ALARM);
+    }
+
+    @Test
+    public void changeStatusToPending() {
+        when(securityRepository.getArmingStatus()).thenReturn(ArmingStatus.DISARMED);
+        when(securityRepository.getAlarmStatus()).thenReturn(AlarmStatus.ALARM);
+        securityService.changeSensorActivationStatus(testSensor);
+
+        verify(securityRepository, times(1)).setAlarmStatus(AlarmStatus.PENDING_ALARM);
+    }
+
+
+
+
+
+
+
 
 
 
