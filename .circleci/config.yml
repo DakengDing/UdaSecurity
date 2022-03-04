@@ -19,6 +19,9 @@ jobs:
       # Checkout the code as the first step.
       - checkout
       # Use mvn clean and package as the standard maven build phase
+      - cd:
+          name: CD
+          command: cd ./carpoint-parent 
       - run:
           name: Build
           command: mvn -B -DskipTests clean package
